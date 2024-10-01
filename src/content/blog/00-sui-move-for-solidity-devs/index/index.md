@@ -1,23 +1,25 @@
 ---
 title: "A gentle introduction to Sui Move, for Solidity developers"
 description: "For when you want your Solidity devs to cry in a new language"
-date: "2024-09-18"
+date: "2024-10-01"
 draft: false
 --- 
 
-As a Solidity developer who got into the Sui world, with no previous experience of Rust, the first contact was a bit overwhelming for me. Sui-flavored Move doesn't follow the object-oriented programming (OOP) paradigm that you can find in the most popular high-level languages used today, and recycles Rust concepts, such as borrowing or typing, which are not explicitly explained in the official Sui documentation.
 
-This goal aims to help other Solidity, and OOP devs to get up to speed with with the main concepts used in Sui programming. Especially if you had to grok everything in a week, like me.
+
+As a Solidity developer who got into the Sui world, with no previous experience of Rust, the first contact was a bit overwhelming for me. Sui-flavored Move doesn't follow the object-oriented programming (OOP) paradigm that you can find in the most popular high-level languages used today. Rust concepts are also recycled, such as borrowing or typing, which are not explicitly explained in the official Sui documentation.
+
+This goal aims to help other Solidity and OOP devs in general, to get up to speed with with the main concepts used in Sui-Move programming. Especially if you had to grok everything in a week, like me.
 
 ## Move Objects
 
-To start, let's talk about a heavily marketed feature of Sui: objects. This may sound confusing, as objects are a well-defined category in OOP languages, with common features. While both use the term "object," their implementations and purposes are quite distinct. Yes, they should have used another name, if you ask me.
+To start, let's talk about a heavily marketed feature of Sui: *objects*. This may sound confusing, as objects are a well-defined category in OOP languages, with common features. While both use the term "object," their implementations and purposes are quite distinct. Yes, they should have used another name, if you ask me.
 
-In Solidity, contracts are objects in the OOP-style, holding internal logic (code), along with data (say, token balance map), and are referenced with a single URI, called "address". Sui doesn't behave like this and separates logic and data, each having their own ressource identifier. OMG!
+In Solidity, contracts are objects in the OOP-style, holding internal logic (code), along with data (say, token balance map), and are referenced with a single URI, called "address". **Sui doesn't behave like this and separates logic and data, each having their own ressource identifier.** OMG!
 
 As a result, you have two types of data stored on chain:
-- Modules, which contain code/logic, but no data, as you would see it in a regular contract. Modules are somewhat (but not exactly) similar to [libraries](https://scribe.rip/https:/medium.com/coinmonks/all-you-should-know-about-libraries-in-solidity-dd8bc953eae7) in Solidity. They cannot store data by themselves. Modules can be accessed/referenced using a classic address, and can't inherit from other modules.
-- Objects, which contain data but no logic. That said, they are still linked to the module that created them, and manages their lifecycle.
+- **Modules**, which contain code/logic, but no data, as you would see it in a regular contract. Modules are somewhat (but not exactly) similar to [libraries](https://scribe.rip/https:/medium.com/coinmonks/all-you-should-know-about-libraries-in-solidity-dd8bc953eae7) in Solidity. They cannot store data by themselves. Modules can be accessed/referenced using a classic address, and can't inherit from other modules.
+- **Objects**, which contain data but no logic. That said, they are still linked to the module that created them, and manages their lifecycle.
 
 Writing Move code consists therefore in architecting the relationship between "objects" and "modules". An object, which is a typed piece of data, is created by a module, and can be updated, or deleted, only by interacting with its associated module. Both are referenced using 32 bytes addresses (with a little tweak for objects, as we'll see in a minute).
 
@@ -59,7 +61,8 @@ module digital_art::gallery {
         ctx: &mut TxContext
     ): DigitalArt {
         DigitalArt {
-            id: object::new(ctx),  // Generate a new UID for the object
+            // Generate a new UID for the object
+            id: object::new(ctx), 
             artist,
             title,
             price,
@@ -67,13 +70,16 @@ module digital_art::gallery {
     }
 
     // Function to update the price of a DigitalArt object
-    public entry fun update_price(art: &mut DigitalArt, new_price: u64) {
+    public fun update_price(
+            art: &mut DigitalArt, 
+            new_price: u64
+        ) {
         art.price = new_price;
     }
 }
 ```
 
-Here, the only way to modify the price is to interact with the module. You can see line 27 that we pass the new price along with the full object data, since the module doesn't contain any data itself. It can't pull it from the blockchain either, as we would have done in Solidity, by passing only the `UID`.
+Here, the only way to modify the price is to interact with the module. You can see in `update_price` that we pass the new price along with the full object data, since the module doesn't contain any data itself. The module can't pull it from the blockchain either, as we would have done in Solidity, by passing only the `UID`.
 
 ## Object ownership
 
@@ -92,7 +98,7 @@ Deep down, the ownership regime for owned objects is linked to the `UID`. You ca
 
 Shared objects have their own `UID` too, but can be used as input in public functions by anyone. This kind of object is great for common data, such as configuration params. Since it is an object, the associated module still controls its lifecyle and who updates it.
 
-To share an object, you need to call `transfer::share_object(my_object);` on it.
+To share an object, you need to call `transfer::share_object(obj);` on it.
 
 ### Move design pattern : basic admin
 
@@ -108,7 +114,7 @@ module digital_art::gallery {
         id: UID
     }
     
-    // Initialize function, called when the module is published
+    // Equivalent to a constructor
     fun init(ctx: &mut TxContext) {
         let gallery_owner = GalleryOwnerCap { 
             id: object::new(ctx) 
@@ -119,8 +125,12 @@ module digital_art::gallery {
 
     // ... 
 
-    // Function to update the price of a DigitalArt object
-    public entry fun update_price(_: &GalleryOwnerCap, art: &mut DigitalArt, new_price: u64) {
+    // Update the price of a DigitalArt object
+    public fun update_price(
+            _: &GalleryOwnerCap, 
+            art: &mut DigitalArt, 
+            new_price: u64
+        ) {
         art.price = new_price;
     }
 }
@@ -130,14 +140,14 @@ For those solidity devs who like to use Open Zeppelin's `OnlyAdmin` decorator, t
 
 ## Borrowing and Mutations
 
-As a Solidity developer, you might find the concepts of ownership and borrowing a bit foreign or, at the very least, more strictly enforced than what you're used to. In Solidity, you can pass variables around, modify state variables directly, and not think too much about who "owns" a particular piece of data at any given time. 
+We saw in the previous section that objects could be owned, but variables also do! 🤯 Let us therefore introduce the concept of variable ownership, and borrowing. This was quite novel for me when I discovered it. Indeed, in Solidity, you can pass variables around, modify state variables directly, and not think too much about who "owns" a particular piece of data at any given time.
 
-Move, however, enforces strict rules around ownership to ensure safety and prevent common bugs like data races and double-spending. It's also crucial for parallel execution, which is one of Sui's defining features.
+There is no such free lunch in Move, which enforces strict rules about who as read and write access to the variables being manipulated during execution. Those restrictions are inherited from Rust, and originate from the need to have a safe execution while allowing parallelization.
 
 ### Understanding variable ownership
-In Move, every value has a single owner, who can manipulate the value at a given time. When you assign a value to a variable, that variable becomes the owner of the value. If you then move that value to another variable or function, the original variable loses ownership and becomes invalid. This concept is important and you'll have to think about it constantly, as almost every line of code includes a reference to borrowing.
+In Move, every value has a single owner, who can manipulate the value at a given time. When you assign a value to a variable, that variable becomes the owner of the value. If you then move that value to another variable or function, the original variable loses ownership and becomes invalid. 
 
-For example:
+This concept is important and you'll have to think about it constantly, as almost every line of code includes a reference to borrowing. For example:
 
 ```rust
 let x = 10;     // 'x' owns the value 10
@@ -171,7 +181,7 @@ fun example() {
 }
 ````
 
-In this code, after moving `s` to `t`, s cannot be used anymore. This ensures that there's a single owner of the data at any given time.
+In this code, after moving `s` to `t`, `s` cannot be used anymore. This ensures that there's a single owner of the data at any given time.
 
 Why ? This allows to specify strictly who can modify what's in the memory, preventing data-races and issues like double spending and reentrancy. Given that Sui is parallelized, this is an important feature to achieve top blockchain speed safely.
 
@@ -179,12 +189,14 @@ Why ? This allows to specify strictly who can modify what's in the memory, preve
 
 When designing functions in Move, you need to decide whether a function should take ownership of a value, borrow it immutably, or borrow it mutably:
 
-- Taking ownership `fun foo (bar: T)`: The function consumes the value, and the caller loses ownership.
-- Immutable borrow `fun foo(bar: &T)`: The function can read the value without modifying it, and the caller retains ownership.
-- Mutable borrow `fun foo(bar: &mut T)`: The function can modify the value, and the caller retains ownership.
+- **Taking ownership** `fun foo (bar: T)`: The function consumes the value, and the caller loses ownership.
+- **Immutable borrow** `fun foo(bar: &T)`: The function can read the value without modifying it, and the caller retains ownership.
+- **Mutable borrow** `fun foo(bar: &mut T)`: The function can modify the value, and the caller retains ownership.
 
-#### Consuming a value
-Suppose we have a DigitalArt object and want to delete it:
+Let's see how it works:
+
+#### Taking ownership
+Suppose we have a `DigitalArt` object and want to delete it:
 
 ```rust
 public fun delete_art(art: DigitalArt) {
@@ -193,10 +205,10 @@ public fun delete_art(art: DigitalArt) {
     object::delete(id);
 }
 ```
-Here, the function takes ownership of art. After calling delete_art, the original owner cannot use art anymore.
+Here, the function takes ownership of art. After calling `delete_art`, the original owner cannot use art anymore.
 
 #### Borrowing for reading
-If we want to display information without modifying the DigitalArt object:
+If we want to display information without modifying the `DigitalArt` object:
 
 ```rust
 public fun display_art(art: &DigitalArt) {
@@ -231,7 +243,7 @@ Remember those! As you learn Move, the compiler will yell at you heavily regardi
 
 ## Abilities
 
-You may have noticed the mention of `key, store` at the start of the object definition. Those are the type's abilities:
+In the previous examples, you may have noticed the mention of `key, store`. Those are the type's *abilities* :
 
 ```rust
 struct GalleryOwnerCap has key, store {
@@ -239,11 +251,13 @@ struct GalleryOwnerCap has key, store {
 }
 ```
 
-They define what the object can be, and do. Let's explain what they are:
+They define what the object can do, and can be, *unburdened by what has been*.
 
 ### Key
 
-The key ability means that the type can have an `UID` in its field, a reference in the global storage. This means that the data can persist after the function is called. A catch is that if you only have this ability, the object is non-transferable. You can transfer it to its owner, but then it's soulbound.
+The key ability means that the type can have an `UID` in its field, a reference in the global storage. This means that the data can persist after the function is called. 
+
+A catch is that if you only have this ability, the object is non-transferable. You can transfer it to its owner, but then it's soulbound.
 
 ```rust
 module examples::key_only_object {
@@ -252,11 +266,12 @@ module examples::key_only_object {
         id: UID
     }
 
-    public entry fun create_key_only(ctx: &mut TxContext) {
+    public fun create_key_only(ctx: &mut TxContext) {
         let obj = KeyOnlyObject {
             id: object::new(ctx)
         };
-        // This is valid - the object will persist and be owned by the sender
+        // This is valid - 
+        // the object will persist and be owned by the sender
         transfer::transfer(obj, tx_context::sender(ctx));
     }
 ```
@@ -264,7 +279,6 @@ module examples::key_only_object {
 ### Store
 
 The `store` ability solves the transfer limitations, by allowing the owner to transfer its asset to other users. It also allows to nest objects into other objects.
-
 
 ```rust
 module digital_art::gallery {
@@ -294,7 +308,10 @@ module digital_art::gallery {
     }
     
     // Add the art to the gallery's collection
-    public fun add_to_collection(gallery: &mut Gallery, art: DigitalArt) {
+    public fun add_to_collection(
+            gallery: &mut Gallery, 
+            art: DigitalArt
+        ) {
         vector::push_back(&mut gallery.collection, art);
     }
 }
@@ -307,9 +324,9 @@ A type with the `store`, but no `key` is commonly used to structure data that wi
 The `copy` ability allows a value to be duplicated without consuming the original. Wait, but what is "consuming" a value, really?
 
 You can *consume* a value in Move by doing the following:
-- Moving: Transferring ownership of a non-copy value
-- Unpacking: Breaking down a struct into its components
-- Passing by value: Giving a non-copy value to a function
+- **Moving**: Transferring ownership of a non-copy value
+- **Unpacking**: Breaking down a struct into its components
+- **Passing by value**: Giving a non-copy value to a function
 
 An object with the `copy` ability can therefore be copied as much as we want, which can be convenient for things like configuration data, for instance. But can be dangerous if we talk about an NFT, or tokens.
 
@@ -326,29 +343,31 @@ struct NoCopy { value: u64 }
 
 let a = NoCopy { value: 10 };
 let b = a;  // 'a' is consumed (moved) here
-// let c = a;  // Error: 'a' has been consumed
+let c = a;  // Error: 'a' has been consumed
 
-fn take_nocopy(nc: NoCopy) { /* ... */ }
+fun take_nocopy(nc: NoCopy) { /* ... */ }
 take_nocopy(b);  // 'b' is consumed here
-// take_nocopy(b);  // Error: 'b' has been consumed
+take_nocopy(b);  // Error: 'b' has been consumed
 
 let NoCopy { value } = b;  // 'b' is consumed (unpacked) here
 ```
 
-As a result, values with the `copy` ability can be reused in your code. Which is great! Why isn't it allowed by default?
+As a result, values with the `copy` ability can be reused in your code. Which is great! 
+
+> Why isn't it allowed by default?
 
 - Copying large structs can be expensive, so the dev may want to optimize the code.
 - Copy allows you to potentially double-spend asset-like objects!
 
-Another question may arise: why can't we just use borrowing?
+> Why can't we just use borrowing?
 
 You could indeed copy an object by creating a new one with the same values, using a reference. This may not be always possible, especially if all of the struct fields aren't available. This leads also to code with an increased complexity (and more compiler yelling).
 
 ### Drop
 
-Let's talk about the last one - `drop`. The `drop` ability allows you to *discard* it or ignore it. How does one discard a type?
+Let's talk about the last one - `drop`. The `drop` ability allows you to *discard* or *ignore* it. How does one discard a type?
 
-If the type doesn't have a `key` (and a `UID` therefore), you can just ignore it and leave it here. Beware, though, it may end up bantering on Twitter, starting a newsletter, and proceed to lose it all on leverage. If the object has one, you can call `object::delete(id);`.
+If the type doesn't have a `key` (and a `UID` therefore), you can just ignore it and leave it here. If the object has an `UID`, you can call `object::delete(id);`.
 
 ```rust
 struct MyObject has key {
@@ -363,7 +382,7 @@ public fun delete_object(obj: MyObject) {
 
 ### Hot potato
 
-Wait, but what if an object has *no ability*? What's the point, right? It's in this case given the charming name of a *hot potato*. Such struct must be consumed and can't be ignored.
+Wait, but what if an object has *no ability*? What's the point, right? It's in this case given the charming name of a *hot potato*. Such struct **must** be consumed and can't be ignored.
 
 This pattern is typically used for flashloans, which expect the money to be returned in the same transaction. Given that Sui Move doesn't accept raw calldata, as Solidity does, you have to use a *Programmable Transaction Block (PBT)*. A PBT is similar to a flashbot bundle, only that transactions can be "linked" and accept the object output of the previous ones. They are executed as one single transaction.
 
@@ -401,7 +420,7 @@ module digital_art::gallery {
         ctx: &mut TxContext,
     ): DigitalArt {
         DigitalArt {
-            id: object::new(ctx),  // Generate a new UID for the object
+            id: object::new(ctx), 
             artist,
             title,
             price,
@@ -417,15 +436,21 @@ module digital_art::gallery {
     }
 
     // Add art to the gallery's collection
-    public fun add_to_collection(gallery: &mut Gallery, art: DigitalArt) {
+    public fun add_to_collection(
+        gallery: &mut Gallery, 
+        art: DigitalArt
+    ) {
         vector::push_back(&mut gallery.collection, art);
     }
     // Borrow digital art from the gallery
-    public entry fun borrow_digital_art(
+    public fun borrow_digital_art(
         gallery: &mut Gallery,
         index: u64,
     ): LoanedDigitalArt {
-        let art = vector::remove(&mut gallery.collection, index);
+        let art = vector::remove(
+            &mut gallery.collection, 
+            index
+        );
         LoanedDigitalArt { art }
     }
 
@@ -444,7 +469,7 @@ module digital_art::gallery {
     }
 
     // Return the borrowed digital art to the gallery
-    public entry fun return_digital_art(
+    public fun return_digital_art(
         gallery: &mut Gallery,
         loaned_art: LoanedDigitalArt,
     ) {
@@ -490,13 +515,13 @@ And we test:
 }
 ```
 
-You may ask - the following while reading this code: *but shouldn't the digital art be returned at the end of the `copy_digital_art` function?* - Yes! But in this case, we only pass a reference of the digital art, so no need to return the original object. It is *borrowed* (more explanations on this later).
+You may ask - the following while reading this code: *but shouldn't the digital art be returned at the end of the `copy_digital_art` function?* - Yes! But in this case, we only pass a borrowed reference of the digital art, so no need to return the original object.
 
 And if you're wondering - yes, you can write Move tests in Move, like you would do with Foundry for Solidity.
 
 ## Types
 
-Move is a typed language (sorry Python devs), inheriting its syntax and overal behavior from Rust. Now the type system may be a bit daunting if you are not comfortable with The Most Admired Language Among Developers™, as I was when I started to learn Move.
+Move is a typed language (sorry Python devs), inheriting its syntax and overal behavior from Rust. Now the type system may be a bit daunting if you are not comfortable with *The Most Admired Language Among Developers™*, as I was when I started to learn Move.
 
 In Move, you have two kind of types: primitive and generics. 
 
@@ -511,12 +536,11 @@ If you read the previous parts, you know that in Sui Move code and data is separ
 
 In practice, generics allow you to pass nested types as inputs for functions, and use them in your code. For instance, if you have a function `bake`, you would input some `Bread<BreadType>` and output the same `Bread<BreadType>`. 
 
-Here, the baker has to input `Bread` but it can be of any kind: `Baguette`, `Bagel`, `Focaccia`, etc. The only constraint is that he has to take the same `<BreadType>` out of the oven. 
+Here, the baker has to input `Bread` but it can be of any kind: `Baguette`, `Bagel`, `Focaccia`, etc. The resulting constraint is that he has to take the same `<BreadType>` out of the oven. 
 
-> **Syntax**: The generic `BreadType` is given at the start of the function to allow the compiler to recognize that it is a generic type: 
-> `fun bake<Your_Generic_Type_Input_here>(...){}`
+The generic `BreadType` is given at the start of the function to allow the compiler to recognize that it is a generic type:
 
-Ok let's check of the code works:
+`fun bake<GenericType>(...){}`
 
 ```rust
 module bakery::bread {
@@ -548,14 +572,16 @@ module bakery::bread {
     }
 
     // Generic function to bake bread
-    public fun bake<BreadType: drop>(bread: &mut Bread<BreadType>): Bread<BreadType> {
+    public fun bake<BreadType: drop>(
+            bread: &mut Bread<BreadType>
+        ): Bread<BreadType> {
         bread.baked = true;
         return bread
     }
 }
 ```
 
-As you see, the type generic `<BreadType>` allows us to make sure that the type is consistent as we code the function. 
+As you see, the type generic `<BreadType>` allows us to make sure that the type of the input and output of the function is consistent.
 
 Let's test:
 
@@ -572,7 +598,8 @@ fun test_baking() {
     let baguette = prepare<Baguette>(250, ctx);
     bake(unbaked_baguette);
 
-    let type_name: TypeName = type_name::get<Bread<Baguette>>();
+    let type_name: TypeName = 
+        type_name::get<Bread<Baguette>>();
     let baguette_type_name: TypeName = 
         type_name::get<typeof(baguette)>();
 
@@ -586,17 +613,19 @@ In the above code, you may have noticed `public fun bake<BreadType: drop>`. This
 
 ### Phantom types
 
-There is a specific kind of types: `phantom`types. When you define a struct, with a type input, you don't need to use the inputed type in the struct's field. In the case, the type is purely informative, allowing to differenciate structs or enforcing contraints without affecting the struct's fields. 
+When you define a struct, with a type input which will be recorded nontheless, you don't need to use the inputed type in the struct's field. The type is then purely informative, allowing to differenciate structs or enforcing contraints without affecting the struct's fields. 
 
 In this case, you can add the `phantom` keyword to the type input to specify explicitly that the type is not used in the fields. See the modified example from above:
 
 ```rust
 module bakery::bread {
     
+    // We define a phantom type here
     struct Bread<phantom BreadType> has key, store {
         id: UID,
         baked: bool,
         weight: u64,
+        // no "BreadType" field!
     }
 
     // Different bread types
@@ -618,7 +647,9 @@ module bakery::bread {
     }
 
     // Generic function to bake bread
-    public fun bake<BreadType: drop>(bread: &mut Bread<T>): Bread<T> {
+    public fun bake<BreadType: drop>(
+            bread: &mut Bread<T>
+        ): Bread<T> {
         bread.baked = true;
         return bread
     }
@@ -631,16 +662,18 @@ Bear in mind that this is optional, but the compiler will yell at you if you don
 
 ## Wrapping Up
 
-Diving into Sui Move as a Solidity developer often feels like stepping into an alternate dimension where the rules of physics are slightly different. It's normal! And we only touched the surface, as there are many subtle features, and design patterns to discuss. Overall, all of those rules should allow you to write safer code, and let the chain churn transactions at maximum speed.
+Diving into Sui Move as a Solidity developer often feels like stepping into an alternate dimension where the rules of physics are slightly different. It's normal! And we only touched the surface, as there are many more subtle features, and design patterns to discuss. Overall, all of those rules should allow you to write safer code, and let the chain churn transactions at maximum speed.
 
-What should you remember from this article? One of the most important aspect is the separation of code and data in Sui Move. It forces us to think differently about how we structure our programs. Modules act as the logic containers, while objects carry the state, each with their own identifiers. This separation, while initially confusing, encourages a design that is both modular and clear in terms of data flow and access control.
+What should you remember from this article? One of the most important aspect is the separation of code and data in Sui Move. It forces us to think differently about how we structure our programs. Modules act as the logic containers, while objects carry the state, each with their own identifiers. 
 
-In the end, embracing Move's paradigms can make you a better developer, not just in Sui but in understanding the underlying principles of secure smart contract development. So take your time, experiment with code, and don't be afraid to make mistakes — the compiler will not forgive you and will always love you even if this sea of red errors.
+This separation, while initially confusing, encourages a design that is both modular and clear in terms of data flow and access control. In later blog posts, we'll discuss possible design patterns to move around it.
+
+In the end, embracing Move's paradigms can make you a better developer, not just in Sui but in understanding the underlying principles of secure smart contract development. So take your time, experiment with code, and don't be afraid to make mistakes — the compiler will forgive you and will always love you even if your terminal window overflows with errors.
 
 And who know? You might just find yourself appreciating the strictness of the Move code! (I'm not there yet, though)
 
 Happy coding!
 
-*PS: I'd like to thank [@KevinAftermath](https://x.com/KevinAftermath) for his advices, and more importantly, his patience when answering the competitively dumb questions I asked as I learn Move.*
+*Yakitori.*
 
-
+*PS: I would like to thank [@KevinAftermath](https://x.com/KevinAftermath) for his advices, and more importantly, his patience when answering the competitively dumb questions I asked as I prepared this article.*
