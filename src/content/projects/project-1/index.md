@@ -1,79 +1,28 @@
 ---
-title: "Astro Sphere"
-description: "Portfolio and blog build with astro."
-date: "03/18/2024"
-demoURL: "https://astro-sphere-demo.vercel.app"
-repoURL: "https://github.com/markhorn-dev/astro-sphere"
+title: "🍜 Yakisoba Cross-Chain Vault"
+description: "Is anyone else feeling a little cross about these chain yields?"
+date: "10/01/2024"
+demoURL: "https://vscode.dev/github/Oni-giri/Yakisoba-vault"
+repoURL: "https://github.com/Oni-giri/Yakisoba-vault"
 ---
 
-![Astro Sphere](/astro-sphere.jpg)
+Yakisoba vaults are an alternative breed of ERC4626 vaults, which allow instant redemptions of illiquid assets. These smart contracts were developed during my time at Astrolab.fi, which focused on cross-chain yield aggregation. Since the project decided to move on to a different architecture, I'm open-sourcing them. 
 
-Astro Sphere is a static, minimalist, lightweight, lightning fast portfolio and blog theme based on Mark Horn's personal website.
+The contracts in their current form have been audited by Hexens. You can find the audit [here](https://hexens.io/audits#astrolab).
+## Key Features 🍜
+### Instant Redemptions
+Traditional cross-chain liquidity solutions often suffer from high costs and delays. Yakisoba addresses this by introducing a liquidity buffer (Swap), a fork of Synapse's stableswap. This buffer holds both the underlying asset and its virtual equivalent, allowing users to redeem instantly without waiting for cross-chain confirmations. If the buffer depletes, the protocol can rebalance and adjust accordingly.
 
-It is primarily Astro, Tailwind and Typescript, with a very small amount of SolidJS for stateful components.
+### MEV Protection and Arbitrage Mitigation
+Cross-chain protocols can be vulnerable to arbitrage opportunities and Miner Extractable Value (MEV) exploits. Yakisoba mitigates these risks by linearizing profits over a set period (e.g., one week), reducing the potential for unfair advantages and ensuring a more stable profit distribution.
 
-## 🚀 Deploy your own
+### Cross-Chain Farming and Flexibility
+Yakisoba supports cross-chain yield farming, enabling diversified capital allocation. The architecture is modular, utilizing `BridgeConnectorHome` and `BridgeConnectorRemote` to manage bridging and messaging securely without tying the protocol to a specific bridge.
 
-<div class="flex gap-2">
-  <a target="_blank" aria-label="Deploy with Vercel" href="https://vercel.com/new/clone?repository-url=https://github.com/markhorn-dev/astro-sphere">
-    <img src="/deploy_vercel.svg" />
-  </a>
-  <a target="_blank" aria-label="Deploy with Netlify" href="https://app.netlify.com/start/deploy?repository=https://github.com/markhorn-dev/astro-sphere">
-    <img src="/deploy_netlify.svg" />
-  </a>
-</div>
+### Capital Allocation
+Currently managed by a keeper, capital allocation is planned to transition to a governance-based model for decentralized control. Allocation by chain happens at the vault level, while allocation by strategy is handled by the `Allocator` contract, which works seamlessly across both home and remote chains.
 
-## 📋 Features
+### Strategies and Workflow
+The Strategy component interfaces with various yield farming protocols, handling deposits, compounding, and withdrawals. It's designed to be adaptable, accommodating protocols with different locking mechanisms to maximize yield opportunities.
 
-- ✅ 100/100 Lighthouse performance
-- ✅ Responsive
-- ✅ Accessible
-- ✅ SEO-friendly
-- ✅ Typesafe
-- ✅ Minimal style
-- ✅ Light/Dark Theme
-- ✅ Animated UI
-- ✅ Tailwind styling
-- ✅ Auto generated sitemap
-- ✅ Auto generated RSS Feed
-- ✅ Markdown support
-- ✅ MDX Support (components in your markdown)
-- ✅ Searchable content (posts and projects)
-
-## 💯 Lighthouse score
-
-![Astro Sphere Lighthouse Score](/lighthouse-nano.jpg)
-
-## 🕊️ Lightweight
-
-All pages under 100kb (including fonts)
-
-## ⚡︎ Fast
-
-Rendered in ~40ms on localhost
-
-## 📄 Configuration
-
-The blog posts on the demo serve as the documentation and configuration.
-
-## 💻 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-Replace npm with your package manager of choice. `npm`, `pnpm`, `yarn`, `bun`, etc
-
-| Command                   | Action                                            |
-| :------------------------ | :------------------------------------------------ |
-| `npm install`             | Installs dependencies                             |
-| `npm run dev`             | Starts local dev server at `localhost:4321`       |
-| `npm run sync`            | Generates TypeScript types for all Astro modules. |
-| `npm run build`           | Build your production site to `./dist/`           |
-| `npm run preview`         | Preview your build locally, before deploying      |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check`  |
-| `npm run astro -- --help` | Get help using the Astro CLI                      |
-| `npm run lint`            | Run ESLint                                        |
-| `npm run lint:fix`        | Auto-fix ESLint issues                            |
-
-## 🏛️ License
-
-MIT
+[Check the repo here!](https://github.com/Oni-giri/Yakisoba-vault)

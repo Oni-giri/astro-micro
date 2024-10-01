@@ -41,6 +41,9 @@ const { Content, headings } = await project.render();
       <h1 class="text-3xl font-semibold text-black dark:text-white">
         {project.data.title}
       </h1>
+      <h2 class="animate text-md italic text-black dark:text-white">
+        {project.data.description}
+    </h2>
       {
         (project.data.demoURL || project.data.repoURL) && (
           <nav class="flex gap-1">
