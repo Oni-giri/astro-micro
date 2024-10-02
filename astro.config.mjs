@@ -8,7 +8,8 @@ import pagefind from "astro-pagefind";
 // https://astro.build/config
 export default defineConfig({
   site: "https://astro-micro.vercel.app",
-  trailingSlash: 'always', // Forces trailing slash on all routes
+  trailingSlash: 'ignore',
+  
   integrations: [tailwind(), sitemap(), mdx(), pagefind()],
   markdown: {
     shikiConfig: {
