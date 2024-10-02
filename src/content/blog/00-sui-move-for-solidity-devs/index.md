@@ -1,5 +1,5 @@
 ---
-title: "A gentle introduction to Sui Move, for Solidity developers"
+title: "A Gentle Introduction to Sui Move, for Solidity developers"
 description: "For when you want your Solidity devs to cry in a new language"
 date: "2024-10-01"
 draft: false

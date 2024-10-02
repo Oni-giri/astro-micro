@@ -1,5 +1,5 @@
 ---
-title: "🍜 Yakisoba Cross-Chain Vault"
+title: "Yakisoba 🍜 Cross-Chain Vault"
 description: "Is anyone else feeling a little cross about these chain yields?"
 date: "10/01/2024"
 demoURL: "https://vscode.dev/github/Oni-giri/Yakisoba-vault"
