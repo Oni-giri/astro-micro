@@ -372,6 +372,10 @@ You could indeed copy a struct by creating a new one with the same values, using
 
 Good question! Seems like an easy way to double spend, right? The answer is that a struct with a `key` ability cannot be copied, since the unique identifier wouldn't be unique anymore. Therefore `key` and `copy` are incompatible. Sorry!
 
+> What if I want to `copy`but not move the ownership ?
+
+The compiler is usually smart(er than me) about inferring whether an assignment wants to be a copy or a move. You can also play around with forcing this behavior by writing `let y = copy x` or `let y. = move x`.
+
 ### Drop
 
 Let's talk about the last one - `drop`. The `drop` ability allows you to *discard* or *ignore* it. How does one discard a type?
